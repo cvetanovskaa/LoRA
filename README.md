@@ -16,12 +16,17 @@ Enter LoRA - a novel approach designed to address this very challenge by streaml
 
 # Paper Overview
 ## Key Idea
-LoRA adapts the weight matrices of attention layers in LLMs by introducing low-rank trainable matrices, which significantly reduces the number of parameters to be trained during the fine-tuning process. This approach targets the attention mechanism of transformers, which is a critical component for capturing long-range dependencies in text.
+LoRA adapts the weight matrices of attention layers in LLMs by introducing low-rank decomposed trainable matrices, which significantly reduces the number of parameters to be trained during the fine-tuning process. This approach targets the attention mechanism of transformers, which is a critical component for capturing long-range dependencies in text.
+
+## Rank
+Imagine you have a bookshelf with some rows filled with books. The rank of this bookshelf is how many rows are not empty. If some rows have the same books as others, we don't count them. So, the rank tells us how many rows have different books. Similarly, in a matrix, the rank tells us how many rows (or columns) are linearly independent, i.e have unique information, not repeated elsewhere.
+
+If a matrix has low rank compared to its size, that means there is a lot of repetition and redundancy in the data it holds. Many of its rows (or columns) are linear combinations of others and can be derived from them.
+
+**Hypothesis: The change in weights during model adaptation have low "intrinsic rank," i.e. they can be described almost as accurately with fewer dimensions than the models originally have.**
 
 ## Low-Rank Decomposition
 What is low-rank decomposition? A technique used to approximate a matrix with a product of two or more matrices that have lower dimensions compared to the original matrix. The key advantage of this decomposition is that it significantly reduces the number of trainable parameters.
-<br>
-- Hypothesis: low "intrisinc rank" i.e. the change in weights during model adaptation can be described almost as accurately using way less dimension than the models have.
 
 ### Practical Example:
 - Transformer weights (according to "Attention is all you need" paper), have dimensions of d x k = 512 x 64 = 32,768 trainable parameters.
@@ -44,11 +49,36 @@ LoRA's fine-tuning process involves three key steps:
 4. After training, A and B can be merged into W to create a fine-tuned model with no change in inference speed.
 5. The fine-tuned model can be used for inference on the downstream task. Switching tasks just requires swapping in different A and B (trained on different labeled data).
 
-## Experimental Results
-The paper details various experiments conducted to demonstrate LoRA's effectiveness. LoRA achieves competitive performance compared to full fine-tuning across different NLP tasks while drastically reducing the number of trainable parameters.
+## Empirical Results
+- Datasets:
+  - GLUE benchmark: Used for testing RoBERTa and DeBERTa.
+  - E2E NLG Challenge: Used for testing GPT-2.
+  - WikiSQL and SAMSum: Used for large-scale experiments on GPT-3.
+    
+- Model Architectures:
+  - RoBERTa (base and large): The performance was evaluated on the GLUE benchmark.
+  - DeBERTa: The performance was evaluated on the GLUE benchmark.
+  - GPT-2 (medium and large): The performance was evaluated on the E2E NLG Challenge.
+  - GPT-3 175B: The performance was evaluated on WikiSQL (natural language to SQL queries) and SAMSum (conversation summarization).
+
+- Main Results:
+  - On GLUE, LoRA matched or exceeded fine-tuning performance using 700x fewer parameters for RoBERTa Large.
+  - In the E2E NLG Challenge, LoRA outperformed several baselines with comparable or fewer trainable parameters.
+  - LoRA adaptation method achieved the highest accuracy compared to other methods on GPT-3, outperforming the Fine-Tuning method by 0.2% on multiple metrics.
   
+- Efficiency:
+  - Compared to fine-tuning GPT-3 175B, LoRA reduced parameter count by 10,000x and memory usage by 3x.
+  - LoRA resulted in a 25% speedup in training throughput compared to full fine-tuning.
+  - No inference speed slowdown compared to fine-tuning, unlike adapter methods.
+ 
+tl;dr:
+- The paper details various experiments conducted to demonstrate LoRA's effectiveness. LoRA achieves competitive performance compared to full fine-tuning across different NLP tasks while drastically reducing the number of trainable parameters.
+
+**Are there specific applications or domains where you think LoRA might be less suitable, and why?**
 
 # LoRA Finetuning Pseudocode (Architecture Overview):
+* Focusing only on matrices W^Q and W^K
+
 ```
 Input: 
   - LLM model with parameters θ
@@ -97,6 +127,8 @@ Output:
 Please refer to the `LoRA_guide.ipynb` notebook.
 
 # Resources
-- https://www.youtube.com/watch?v=lixMONUAjfs
-- https://www.databricks.com/blog/efficient-fine-tuning-lora-guide-llms
-- https://www.anyscale.com/blog/fine-tuning-llms-lora-or-full-parameter-an-in-depth-analysis-with-llama-2
+- Aghajanyan, A., Zettlemoyer, L., & Gupta, S. (2020). Intrinsic dimensionality explains the effectiveness of language model fine-tuning. arXiv preprint arXiv:2012.13255. (https://arxiv.org/abs/2012.13255)
+- Alexiuk, C. (2023, April 30). Low-rank adaption of large language models: Explaining the key concepts behind LoRA [Video]. YouTube. Retrieved from https://www.youtube.com/watch?v=dA-NhCtrrVE
+- Niederfahrenhorst, A., Hakhamaneshi, K., & Ahmad, R. (2023, September 6). Fine-tuning LLMs: LoRA or Full-Parameter? An in-depth analysis with Llama 2. Anyscale Blog. Retrieved from https://www.anyscale.com/blog/fine-tuning-llms-lora-or-full-parameter-an-in-depth-analysis-with-llama-2
+- Roth, W. (2023, June 1). LoRA - Low-rank adaptation of AI large language models: LoRA and QLoRA explained simply [Video]. YouTube. https://www.youtube.com/watch?v=lixMONUAjfs
+- Sooriyarachchi, A. (2023, August 30). Efficient fine-tuning with LoRA: A guide to optimal parameter selection for large language models. Databricks Engineering Blog. Retrieved from https://www.databricks.com/blog/efficient-fine-tuning-lora-guide-llms
