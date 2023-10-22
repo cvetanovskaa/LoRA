@@ -15,24 +15,38 @@ With the ever-growing size of these models, one critical question has come to th
 Enter LoRA - a novel approach designed to address this very challenge by streamlining the fine-tuning process while preserving the model's efficacy and introducing zero inference latency. 
 
 # Paper Overview
-- LoRA is a technique that optimizes the fine-tuning process by selectively updating only a subset of parameters, specifically targeting the weight matrices in the attention layers, which are crucial for capturing long-range dependencies in the input data.
-To achieve this, LoRA utilizes low-rank matrix decomposition, a technique that simplifies the weight matrices while preserving their essential characteristics.
+## Key Idea
+LoRA adapts the weight matrices of attention layers in LLMs by introducing low-rank trainable matrices, which significantly reduces the number of parameters to be trained during the fine-tuning process. This approach targets the attention mechanism of transformers, which is a critical component for capturing long-range dependencies in text.
 
-- What is low-rank decomposition? A technique used to approximate a matrix with a product of two or more matrices that have lower dimensions compared to the original matrix.
+## Low-Rank Decomposition
+What is low-rank decomposition? A technique used to approximate a matrix with a product of two or more matrices that have lower dimensions compared to the original matrix. The key advantage of this decomposition is that it significantly reduces the number of trainable parameters.
+<br>
+- Hypothesis: low "intrisinc rank" i.e. the change in weights during model adaptation can be described almost as accurately using way less dimension than the models have.
 
-<p float="left">
-  <img src="https://github.com/cvetanovskaa/LoRA/assets/15224551/7846c998-c92e-4f47-9bb2-ded02045924f" width="500" />
-  <img src="https://github.com/cvetanovskaa/LoRA/assets/15224551/ea70ad34-87b9-426b-b494-0f3266c40b70" width="500" />
-</p>
-
-## Practical Example:
+### Practical Example:
 - Transformer weights (according to "Attention is all you need" paper), have dimensions of d x k = 512 x 64 = 32,768 trainable parameters.
 - In LoRA with rank 8, we have two matrices:
   - 512 x 8 = 4096 parameters
   - 8 x 64 = 512 parameters
   - Therefore, LoRA gives us 4608 trainable parameteres => 86% reduction
 
-## LoRA Finetuning Pseudocode (Architecture Overview):
+<p float="left">
+  <img src="https://github.com/cvetanovskaa/LoRA/assets/15224551/7846c998-c92e-4f47-9bb2-ded02045924f" width="500" />
+  <img src="https://github.com/cvetanovskaa/LoRA/assets/15224551/ea70ad34-87b9-426b-b494-0f3266c40b70" width="500" />
+</p>
+
+## LoRA Finetuning Process
+LoRA's fine-tuning process involves three key steps:
+
+1. Initialization of low-rank matrices for each attention layer.
+2. Freezing the original weight matrices in attention layers.
+3. Iteratively updating the low-rank matrices based on gradients computed from the training data.
+
+## Experimental Results
+The paper details various experiments conducted to demonstrate LoRA's effectiveness. LoRA achieves competitive performance compared to full fine-tuning across different NLP tasks while drastically reducing the number of trainable parameters.
+  
+
+# LoRA Finetuning Pseudocode (Architecture Overview):
 ```
 Input: 
   - LLM model with parameters θ
@@ -63,11 +77,24 @@ Output:
 ```
 
 # Critical Analysis
-TBD
+**Advantages:**
+- Drastically reduces number of trainable parameters compared to full fine-tuning. This enables fine-tuning huge models like GPT-3 with limited compute.
+- Avoids changing the original model weights, which could degrade the general knowledge acquired during pre-training.
+- Allows efficient switching between tasks by just swapping the low-rank matrices.
+- No inference speed penalty compared to full fine-tuning, as LoRA matrices can be merged into original weights.
+- Achieves competitive performance to full fine-tuning on many NLP tasks.
+- Provides insights into the low-rank structure of optimal model updates.
+
+**Limitations:**
+- May not reach full fine-tuning performance on some difficult tasks, as model capacity is constrained.
+- Need to select which weight matrices to apply LoRA to. No clear optimal strategy known yet, although the paper does cover some empirical analysis of this.
+- Restricts model updates to lie in a low-rank subspace, which could hypothetically limit expressiveness.
+- LoRA rank is a new hyperparameter to tune, in addition to learning rate etc.
 
 # Code Demonstration
-Please refer to the `LoRA Guide.ipynb` notebook.
+Please refer to the `LoRA_guide.ipynb` notebook.
 
 # Resources
+- https://www.youtube.com/watch?v=lixMONUAjfs
 - https://www.databricks.com/blog/efficient-fine-tuning-lora-guide-llms
 - https://www.anyscale.com/blog/fine-tuning-llms-lora-or-full-parameter-an-in-depth-analysis-with-llama-2
