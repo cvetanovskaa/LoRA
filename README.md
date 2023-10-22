@@ -38,9 +38,11 @@ What is low-rank decomposition? A technique used to approximate a matrix with a 
 ## LoRA Finetuning Process
 LoRA's fine-tuning process involves three key steps:
 
-1. Initialization of low-rank matrices for each attention layer.
-2. Freezing the original weight matrices in attention layers.
-3. Iteratively updating the low-rank matrices based on gradients computed from the training data.
+1. Initialization of low-rank matrices for each attention layer. The dimensions are A ∈ R^{r x d}, B ∈ R^{d x r} where r is the rank and d is the input dimension.
+2. Freezing the original weight matrices in attention layers so they do not get updated during fine-tuning.
+3. Iteratively updating only the low-rank matrices (A and B) based on gradients computed from the training labeled data.
+4. After training, A and B can be merged into W to create a fine-tuned model with no change in inference speed.
+5. The fine-tuned model can be used for inference on the downstream task. Switching tasks just requires swapping in different A and B (trained on different labeled data).
 
 ## Experimental Results
 The paper details various experiments conducted to demonstrate LoRA's effectiveness. LoRA achieves competitive performance compared to full fine-tuning across different NLP tasks while drastically reducing the number of trainable parameters.
@@ -59,19 +61,19 @@ Input:
 Output:
   - Fine-tuned model with parameters θ'
 
-1: Initialize low-rank matrices U and V for each attention layer with rank k
+1: Initialize low-rank matrices A and B for each attention layer with rank k
 2: Freeze the original weight matrices W^Q and W^K in the attention layers
 3: for epoch = 1, 2, ..., E do
 4:   for each batch (x, y) in D with size B do
 5:     Compute gradients ∇U and ∇V w.r.t. the loss L(θ, (x, y))
 6:     Update low-rank matrices U and V:
-7:       U = U - η∇U
-8:       V = V - η∇V
+7:       A = A - η∇A
+8:       B = B - η∇B
 9:   end for
 10: end for
-11: Update weight matrices W^Q and W^K using U and V:
-12:   W^Q = UV^T
-13:   W^K = UV^T
+11: Update weight matrices W^Q and W^K using A and B:
+12:   W^Q = AB^T
+13:   W^K = AB^T
 14: Update the model parameters θ' with the updated weight matrices
 15: Return fine-tuned model parameters θ'
 ```
