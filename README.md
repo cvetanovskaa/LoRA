@@ -23,7 +23,7 @@ Imagine you have a bookshelf with some rows filled with books. The rank of this 
 
 If a matrix has low rank compared to its size, that means there is a lot of repetition and redundancy in the data it holds. Many of its rows (or columns) are linear combinations of others and can be derived from them.
 
-**Hypothesis: The change in weights during model adaptation have low "intrinsic rank," i.e. they can be described almost as accurately with fewer dimensions than the models originally have.**
+**Hypothesis: The weight change metrices, used during model adaptation, have low "intrinsic rank," i.e. they can be described almost as accurately with fewer dimensions than the models originally have.**
 
 ## Low-Rank Decomposition
 What is low-rank decomposition? A technique used to approximate a matrix with a product of two or more matrices that have lower dimensions compared to the original matrix. The key advantage of this decomposition is that it significantly reduces the number of trainable parameters.
@@ -41,7 +41,6 @@ What is low-rank decomposition? A technique used to approximate a matrix with a 
 </p>
 
 ## LoRA Finetuning Process
-LoRA's fine-tuning process involves three key steps:
 
 1. Initialization of low-rank matrices for each attention layer. The dimensions are A ∈ R^{r x d}, B ∈ R^{d x r} where r is the rank and d is the input dimension.
 2. Freezing the original weight matrices in attention layers so they do not get updated during fine-tuning.
@@ -74,7 +73,7 @@ LoRA's fine-tuning process involves three key steps:
 tl;dr:
 - The paper details various experiments conducted to demonstrate LoRA's effectiveness. LoRA achieves competitive performance compared to full fine-tuning across different NLP tasks while drastically reducing the number of trainable parameters.
 
-**Are there specific applications or domains where you think LoRA might be less suitable, and why?**
+**Discussion Question: Are there specific applications or domains where you think LoRA might be less suitable, and why?**
 
 # LoRA Finetuning Pseudocode (Architecture Overview):
 * Focusing only on matrices W^Q and W^K
