@@ -16,14 +16,19 @@ Enter LoRA - a novel approach designed to address this very challenge by streaml
 
 # Paper Overview
 ## Key Idea
-LoRA adapts the weight matrices of attention layers in LLMs by introducing low-rank decomposed trainable matrices, which significantly reduces the number of parameters to be trained during the fine-tuning process. This approach targets the attention mechanism of transformers, which is a critical component for capturing long-range dependencies in text.
+Building on top of previous research, LoRA adapts the weight matrices of attention layers in LLMs by introducing low-rank decomposed trainable matrices, which significantly reduces the number of trainable parameters. This approach targets the attention mechanism of transformers, which is a critical component for capturing long-range dependencies in text.
+
+<p float="left">
+  <img src="https://github.com/cvetanovskaa/LoRA/assets/15224551/7846c998-c92e-4f47-9bb2-ded02045924f" width="500" />
+  <img src="https://github.com/cvetanovskaa/LoRA/assets/15224551/ea70ad34-87b9-426b-b494-0f3266c40b70" width="500" />
+</p>
 
 ## Rank
 Imagine you have a bookshelf with some rows filled with books. The rank of this bookshelf is how many rows are not empty. If some rows have the same books as others, we don't count them. So, the rank tells us how many rows have different books. Similarly, in a matrix, the rank tells us how many rows (or columns) are linearly independent, i.e have unique information, not repeated elsewhere.
 
 If a matrix has low rank compared to its size, that means there is a lot of repetition and redundancy in the data it holds. Many of its rows (or columns) are linear combinations of others and can be derived from them.
 
-**Hypothesis: The weight change metrices, used during model adaptation, have low "intrinsic rank," i.e. they can be described almost as accurately with fewer dimensions than the models originally have.**
+**Hypothesis: The weight change matrices, used during model adaptation, have low "intrinsic rank," i.e. they can be described almost as accurately with fewer dimensions than the models originally have.**
 
 ## Low-Rank Decomposition
 What is low-rank decomposition? A technique used to approximate a matrix with a product of two or more matrices that have lower dimensions compared to the original matrix. The key advantage of this decomposition is that it significantly reduces the number of trainable parameters.
@@ -35,10 +40,6 @@ What is low-rank decomposition? A technique used to approximate a matrix with a 
   - 8 x 64 = 512 parameters
   - Therefore, LoRA gives us 4608 trainable parameteres => 86% reduction
 
-<p float="left">
-  <img src="https://github.com/cvetanovskaa/LoRA/assets/15224551/7846c998-c92e-4f47-9bb2-ded02045924f" width="500" />
-  <img src="https://github.com/cvetanovskaa/LoRA/assets/15224551/ea70ad34-87b9-426b-b494-0f3266c40b70" width="500" />
-</p>
 
 ## LoRA Finetuning Process
 
@@ -47,6 +48,38 @@ What is low-rank decomposition? A technique used to approximate a matrix with a 
 3. Iteratively updating only the low-rank matrices (A and B) based on gradients computed from the training labeled data.
 4. After training, A and B can be merged into W to create a fine-tuned model with no change in inference speed.
 5. The fine-tuned model can be used for inference on the downstream task. Switching tasks just requires swapping in different A and B (trained on different labeled data).
+
+### LoRA Finetuning Pseudocode (Architecture Overview):
+* Focusing only on matrices W^Q and W^K
+
+```
+Input: 
+  - LLM model with parameters θ
+  - Training data D = {(x_i, y_i)}
+  - Learning rate η
+  - Rank of approximation k
+  - Batch size B
+  - Number of epochs E
+  
+Output:
+  - Fine-tuned model with parameters θ'
+
+1: Initialize low-rank matrices A and B for each attention layer with rank k
+2: Freeze the original weight matrices W^Q and W^K in the attention layers
+3: for epoch = 1, 2, ..., E do
+4:   for each batch (x, y) in D with size B do
+5:     Compute gradients ∇A and ∇B w.r.t. the loss L(θ, (x, y))
+6:     Update low-rank matrices U and V:
+7:       A = A - η∇A
+8:       B = B - η∇B
+9:   end for
+10: end for
+11: Update weight matrices W^Q and W^K using A and B:
+12:   W^Q = AB^T
+13:   W^K = AB^T
+14: Update the model parameters θ' with the updated weight matrices
+15: Return fine-tuned model parameters θ'
+```
 
 ## Empirical Results
 - Datasets:
@@ -74,38 +107,6 @@ tl;dr:
 - The paper details various experiments conducted to demonstrate LoRA's effectiveness. LoRA achieves competitive performance compared to full fine-tuning across different NLP tasks while drastically reducing the number of trainable parameters.
 
 **Discussion Question: Are there specific applications or domains where you think LoRA might be less suitable, and why?**
-
-# LoRA Finetuning Pseudocode (Architecture Overview):
-* Focusing only on matrices W^Q and W^K
-
-```
-Input: 
-  - LLM model with parameters θ
-  - Training data D = {(x_i, y_i)}
-  - Learning rate η
-  - Rank of approximation k
-  - Batch size B
-  - Number of epochs E
-  
-Output:
-  - Fine-tuned model with parameters θ'
-
-1: Initialize low-rank matrices A and B for each attention layer with rank k
-2: Freeze the original weight matrices W^Q and W^K in the attention layers
-3: for epoch = 1, 2, ..., E do
-4:   for each batch (x, y) in D with size B do
-5:     Compute gradients ∇U and ∇V w.r.t. the loss L(θ, (x, y))
-6:     Update low-rank matrices U and V:
-7:       A = A - η∇A
-8:       B = B - η∇B
-9:   end for
-10: end for
-11: Update weight matrices W^Q and W^K using A and B:
-12:   W^Q = AB^T
-13:   W^K = AB^T
-14: Update the model parameters θ' with the updated weight matrices
-15: Return fine-tuned model parameters θ'
-```
 
 # Critical Analysis
 **Advantages:**
